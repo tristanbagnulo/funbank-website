@@ -1,8 +1,8 @@
 # dummywebsite
 
-> A Vue.js project
-> Using Node.js and NPM
-> A basic fake bank website for the sake of practicing web development
+- A Vue.js project
+- Made with Node.js and NPM
+- A basic fake bank website for the sake of practicing web development
 
 ## Build Setup
 

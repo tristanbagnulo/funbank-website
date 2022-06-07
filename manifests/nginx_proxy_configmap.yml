@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: digital-human-default-conf
+  labels:
+    app: digital-human-proxy
+data:
+  default.conf: |
+    server {
+      listen 80;
+      server_name digital-human.alphawest.com.au;
+      location / {
+            proxy_pass http://digital-human:8080;
+            proxy_set_header X-Forwarded-Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            add_header P3P 'CP="ALL DSP COR PSAa PSDa OUR NOR ONL UNI COM NAV"';
+      }
+    }

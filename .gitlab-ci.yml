@@ -1,0 +1,15 @@
+---
+stages:
+  - build
+  - deploy:k8s_dev:secrets:api
+  - deploy:k8s_dev:api
+  - deploy:k8s_dev:proxy
+  - deploy:k8s_prod:secrets:api
+  - deploy:k8s_prod:api
+  - deploy:k8s_prod:proxy
+
+include:
+  - local: .gitlab/ci/build-images-gitlab-ci.yml
+  - local: .gitlab/ci/dev-k8s-deploy-gitlab-ci.yml
+  - local: .gitlab/ci/prod-k8s-deploy-gitlab-ci.yml
+...

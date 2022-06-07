@@ -1,0 +1,20 @@
+api_image_build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  tags:
+    - k8s-dev-1
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_BUILD_REF_NAME == "master" || $CI_BUILD_REF_NAME == "ppt")'
+      changes:
+        - schema/*
+        - nginx.conf
+        - Dockerfile
+        - .dockerignore
+        - manifests/digital_human_service.yml
+        - manifests/digital_human_deployment.yml
+        - manifests/digital_human_secrets.yml
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --build-arg http_proxy=$http_proxy --build-arg https_proxy=$https_proxy --context $CI_PROJECT_DIR/ --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:digital-human-$CI_COMMIT_SHORT_SHA

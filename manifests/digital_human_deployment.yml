@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digital-human
+  labels:
+    app: digital-human
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: digital-human
+  template:
+    metadata:
+      labels:
+        app: digital-human
+    spec:
+      imagePullSecrets:
+      - name: digital-human-registry-key
+      containers:
+      - image: __CI_REGISTRY_IMAGE__
+        imagePullPolicy: Always
+        name: digital-human
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 60
+        ports:
+        - containerPort: 8080
+        env:
+          - name: API_URL
+            value: __API_URL__
+          - name: http_proxy
+            value: http://203.202.141.90:3128
+          - name: https_proxy
+            value: http://203.202.141.90:3128

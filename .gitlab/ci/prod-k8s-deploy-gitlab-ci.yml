@@ -1,0 +1,82 @@
+#-------------------------------------------------------deploy prod k8s secrets
+
+deploy_gitlab_registry_deploy_token_k8s_prod:
+  stage: deploy:k8s_prod:secrets:api
+  image:
+    name: lachlanevenson/k8s-kubectl:latest
+    entrypoint: ["/bin/sh", "-c"]
+  tags:
+    - k8s-prod-1
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+  environment:
+    name: k8s-prod-1
+    kubernetes:
+      namespace: $KUBE_NAMESPACE
+  script:
+    - export
+    - cd manifests
+    - export DOCKERAUTH=`echo -n "$CI_DEPLOY_USER:$CI_DEPLOY_PASSWORD" | base64 | tr -d '\n'`
+    - export DOCKERCONFIGJSON=`echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$DOCKERAUTH\"}}}" | base64 | tr -d '\n'`
+    - sed -i "s~__DOCKERCONFIGJSON__~${DOCKERCONFIGJSON}~" digital_human_secrets.yml
+    - kubectl apply -f digital_human_secrets.yml
+
+#-------------------------------------------------------deploy api
+
+deploy_api_k8s_prod:
+  stage: deploy:k8s_prod:api
+  image:
+    name: lachlanevenson/k8s-kubectl:latest
+    entrypoint: ["/bin/sh", "-c"]
+  tags:
+    - k8s-prod-1
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      changes:
+        - schema/*
+        - nginx.conf
+        - Dockerfile
+        - manifests/digital_human_service.yml
+        - manifests/digital_human_deployment.yml
+        - manifests/digital_human_secrets.yml
+  environment:
+    name: k8s-prod-1
+    kubernetes:
+      namespace: $KUBE_NAMESPACE
+  script:
+    - cd manifests
+    - sed -i "s~__CI_REGISTRY_IMAGE__~${CI_REGISTRY_IMAGE}:digital-human-${CI_COMMIT_SHORT_SHA}~" digital_human_deployment.yml
+    - kubectl apply -f digital_human_service.yml
+    - kubectl apply -f digital_human_deployment.yml
+    - kubectl rollout status -f digital_human_deployment.yml
+
+  #-------------------------------------------------------deploy proxy
+
+deploy_proxy_k8s_prod:
+  stage: deploy:k8s_prod:proxy
+  image:
+    name: lachlanevenson/k8s-kubectl:latest
+    entrypoint: ["/bin/sh", "-c"]
+  tags:
+    - k8s-prod-1
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      changes:
+      - public/*
+      - certs/*
+      - server.js
+      - package.json
+      - manifests/nginx_proxy_service.yml
+      - manifests/nginx_proxy_configmap.yml
+      - manifests/nginx_proxy_deployment.yml
+      - Dockerfile
+  environment:
+    name: k8s-prod-1
+    kubernetes:
+      namespace: $KUBE_NAMESPACE
+  script:
+    - cd manifests
+    - kubectl apply -f nginx_proxy_service.yml
+    - kubectl apply -f nginx_proxy_configmap.yml
+    - kubectl apply -f nginx_proxy_deployment.yml
+    - kubectl rollout status -f nginx_proxy_deployment.yml
